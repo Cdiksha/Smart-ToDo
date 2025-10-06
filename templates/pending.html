@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Pending — Smart To-Do{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4>Pending Tasks</h4>
+  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('index') }}">Back</a>
+</div>
+
+<div class="row g-3">
+  {% if tasks %}
+    {% for task in tasks %}
+      <div class="col-md-4">
+        <div class="task-card">
+          <div style="width:48px; display:flex; align-items:center; justify-content:center;">
+            <a href="{{ url_for('toggle', id=task.id) }}"><i class="bi bi-circle"></i></a>
+          </div>
+          <div style="flex:1">
+            <h5>{{ task.title }}</h5>
+            <p class="small">{{ task.description }}</p>
+            <small class="text-muted">Priority: {{ task.priority }} • Due: {{ task.due_date.strftime('%b %d, %Y %H:%M') if task.due_date else '—' }}</small>
+            <div class="mt-2">
+              <a class="btn btn-success btn-sm" href="{{ url_for('toggle', id=task.id) }}">Complete</a>
+              <a class="btn btn-danger btn-sm" href="{{ url_for('delete', id=task.id) }}">Delete</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="col-12"><div class="no-tasks"><div class="big">No pending tasks</div><div>You're all caught up 🎉</div></div></div>
+  {% endif %}
+</div>
+{% endblock %}
+

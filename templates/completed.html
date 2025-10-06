@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Completed Tasks — Smart To-Do{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4>Completed Tasks</h4>
+  <a href="{{ url_for('workflow') }}" class="btn btn-sm btn-outline-primary">Back to Workflow</a>
+</div>
+
+<div class="row g-3">
+  {% for t in tasks %}
+  <div class="col-md-4">
+    <div class="card p-3 task-card d-flex align-items-start" data-task="{{ t.id }}">
+      <div style="width:40px;">
+        <a href="{{ url_for('toggle', id=t.id) }}">
+          {% if t.complete %}
+            <i class="bi bi-check-circle-fill text-success"></i>
+          {% else %}
+            <i class="bi bi-circle"></i>
+          {% endif %}
+        </a>
+      </div>
+      <div style="flex:1">
+        <div class="task-title text-decoration-line-through">{{ t.title }}</div>
+        <div class="task-desc small">{{ t.description or '' }}</div>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <div class="small text-muted">
+            {% if t.due_date %}
+              <i class="bi bi-calendar-event"></i> {{ t.due_date.strftime('%b %d') }}
+            {% endif %}
+          </div>
+          <div>
+            <span class="badge {% if t.priority=='High' %}bg-danger{% elif t.priority=='Medium' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+              {{ t.priority }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div> <!-- end task-card -->
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

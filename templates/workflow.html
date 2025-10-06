@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Workflow — Smart To-Do{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4>Workflow</h4>
+  <form class="d-flex" method="get" action="{{ url_for('workflow') }}">
+    <select name="sort" class="form-select form-select-sm me-2" onchange="this.form.submit()">
+      <option value="due_date" {% if sort_by=='due_date' %}selected{% endif %}>Sort by due date</option>
+      <option value="priority" {% if sort_by=='priority' %}selected{% endif %}>Sort by priority</option>
+      <option value="created_at" {% if sort_by=='created_at' %}selected{% endif %}>Sort by created</option>
+    </select>
+    <button class="btn btn-sm btn-outline-secondary ms-2" type="button" data-bs-toggle="modal" data-bs-target="#addColumnModal">
+      <i class="bi bi-list"></i> Add Column
+    </button>
+  </form>
+</div>
+
+<div class="row g-3">
+  {% for col in columns %}
+  <div class="col-md-4">
+    <div class="card p-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <h6 class="mb-0">{{ col.name }}</h6>
+          {% if col.name not in ['To Do', 'In Progress', 'Done', 'Pending'] %}
+          <form method="POST" action="{{ url_for('delete_column', column_id=col.id) }}" onsubmit="return confirm('Delete this column?')" style="display:inline;">
+            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+        <small class="text-muted">({{ col.tasks|length }})</small>
+      </div>
+
+      <div class="kanban-column" id="col-{{ col.id }}" data-column="{{ col.id }}">
+        {% for t in col.tasks %}
+        <div class="task-card mb-2 d-flex align-items-start" data-task="{{ t.id }}">
+          <a href="#" data-bs-toggle="modal" data-bs-target="#editTaskModal{{ t.id }}">
+            <i class="bi bi-pencil-square me-2"></i>
+          </a>
+          <div style="width:40px;">
+            <a href="{{ url_for('toggle', id=t.id) }}">
+              {% if t.complete %}
+                <i class="bi bi-check-circle-fill text-success"></i>
+              {% else %}
+                <i class="bi bi-circle"></i>
+              {% endif %}
+            </a>
+          </div>
+
+          <div style="flex:1">
+            <div class="task-title {% if t.complete %}text-decoration-line-through{% endif %}">{{ t.title }}</div>
+            <div class="task-desc small">{{ t.description or '' }}</div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <div class="small text-muted">
+                {% if t.due_date %}
+                  <i class="bi bi-calendar-event"></i> {{ t.due_date.strftime('%b %d') }}
+                {% endif %}
+              </div>
+              <div>
+                <span class="badge {% if t.priority=='High' %}bg-danger{% elif t.priority=='Medium' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                  {{ t.priority }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Task Modal -->
+        <div class="modal fade" id="editTaskModal{{ t.id }}" tabindex="-1" aria-labelledby="editTaskModalLabel{{ t.id }}" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form action="{{ url_for('edit_task', task_id=t.id) }}" method="POST">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="editTaskModalLabel{{ t.id }}">Edit Task</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <label>Title</label>
+                  <input type="text" name="title" class="form-control" value="{{ t.title }}" required>
+                  <label>Description</label>
+                  <textarea name="description" class="form-control" rows="3">{{ t.description }}</textarea>
+                  <label>Due Date</label>
+                  <input type="date" name="due_date" class="form-control" value="{{ t.due_date.strftime('%Y-%m-%d') if t.due_date else '' }}">
+                  <label>Priority</label>
+                  <select name="priority" class="form-control">
+                    <option value="High" {% if t.priority=='High' %}selected{% endif %}>High</option>
+                    <option value="Medium" {% if t.priority=='Medium' %}selected{% endif %}>Medium</option>
+                    <option value="Low" {% if t.priority=='Low' %}selected{% endif %}>Low</option>
+                  </select>
+                </div>
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-success">Save Changes</button>
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Add Column Modal (moved outside loops for correct functioning) -->
+<div class="modal fade" id="addColumnModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('add_column') }}" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Column</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input name="name" class="form-control" placeholder="Column name (e.g., Blocked)">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+  document.querySelectorAll('.kanban-column').forEach(colEl => {
+    new Sortable(colEl, {
+      group: 'kanban',
+      animation: 180,
+      onAdd: function (evt) {
+        const taskId = evt.item.dataset.task;
+        const colId = evt.to.dataset.column;
+        fetch(`/update_column/${taskId}/${colId}`, { method: 'POST' })
+          .then(r => r.json())
+          .then(j => {
+            if (!j.success) console.warn('update_column failed', j);
+          });
+      }
+    });
+  });
+</script>
+{% endblock %}
